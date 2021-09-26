@@ -32,17 +32,21 @@ const signUpUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
   const {email, password} = req.body;
+  console.log("HERE")
   const user = await User.findOne({email});
   // means that the email doesn't exist associated with a user
+  console.log("HERE after User.find")
   if (!user) { 
     return res.status(400).json({message: "Please check credentials"});
   }
   const validPassword = bcrypt.compareSync(password, user.password);
+  console.log("HERE after BCRYPT")
   // checking if the password is wrong
   if (!validPassword) { 
     return res.status(500).json({message: "Please check credentials"});
   }
   const token = await generateJwt(user._id);
+  console.log("HERE after generateJWT")
   return res.status(200).json({user, token});
 }
 
