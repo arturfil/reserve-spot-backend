@@ -4,6 +4,7 @@ const { googleVerify } = require('../helpers/googleVerify');
 const { generateJwt } = require('../middlewares/generateJwt')
 const User = require('../models/User');
 
+// GET
 const getAllUsers = async (req, res) => {
   const users = await User.find();
   try {
@@ -13,6 +14,7 @@ const getAllUsers = async (req, res) => {
   }
 }
 
+// POST/signup 
 const signUpUser = async (req, res) => {
   const testEmail = await User.findOne({email: req.body.email})
   if (testEmail) {
@@ -30,33 +32,41 @@ const signUpUser = async (req, res) => {
   }
 }
 
+// POST/login
 const loginUser = async (req, res) => {
+  // password123
   const {email, password} = req.body;
-  console.log("HERE")
   const user = await User.findOne({email});
   // means that the email doesn't exist associated with a user
-  console.log("HERE after User.find")
   if (!user) { 
     return res.status(400).json({message: "Please check credentials"});
   }
   const validPassword = bcrypt.compareSync(password, user.password);
-  console.log("HERE after BCRYPT")
   // checking if the password is wrong
   if (!validPassword) { 
     return res.status(500).json({message: "Please check credentials"});
   }
   const token = await generateJwt(user._id);
-  console.log("HERE after generateJWT")
   return res.status(200).json({user, token});
 }
 
+// POST/googleLogin
 const googleLogin = async (req, res) => {
-  const { id_token } = req.body;
+  const { email, name } = req.body;
+  let user = await User.findOne({email});
+  if (!user) {
+    user = await User.create({
+      email: email,
+      name: name,
+      password: "P",
+      google: true
+    })
+  }
   try {
-    const googleUser = await googleVerify(id_token);
-    console.log(googleUser)
+    const token = await generateJwt(user._id);
+    return res.status(200).json({user, token})
   } catch (error) {
-    return res.status(400).json({message: "Couldn't verify token"})
+    return res.status(500).json({message: "User was not able to login"})
   }
 }
 
